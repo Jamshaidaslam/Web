@@ -1,1 +1,82 @@
-Clean.py
+# Import necessary libraries
+import os
+import pandas as pd
+import numpy as np
+from flask import Flask, request, render_template, redirect, url_for, flash, send_file
+from werkzeug.utils import secure_filename
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Create a Flask app
+app = Flask(__name__)
+app.secret_key = "your_secret_key_here"
+
+# Define allowed file extensions and upload folder
+ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Function to check if file extension is allowed
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Function to perform data preprocessing
+def preprocess_data(file_path):
+    # Load the dataset
+    df = pd.read_csv(file_path)  # Use pd.read_excel for XLSX files
+
+    # Data cleaning and preprocessing steps
+    # 1. Check for missing values and handle them
+    # 2. Detect and handle duplicate rows
+    # 3. Convert data types
+    # 4. Remove outliers
+    # 5. Perform data transformations
+    # (Implement these steps as needed)
+
+    return df
+
+# Define a route for the home page
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    if request.method == 'POST':
+        # Check if the post request has a file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        
+        file = request.files['file']
+        
+        # If the user does not select a file, the browser submits an empty part without filename
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        
+        if file and allowed_file(file.filename):
+            # Save the uploaded file
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+
+            # Perform data preprocessing
+            preprocessed_df = preprocess_data(file_path)
+
+            # Provide summary statistics
+            summary_stats = preprocessed_df.describe()
+
+            # Generate visualizations (e.g., histograms, scatter plots)
+            # (Add code for generating visualizations as needed)
+
+            # Return a page with the preprocessed data and visualizations
+            return render_template('result.html', tables=[summary_stats.to_html(classes='data')], titles=summary_stats.columns.values)
+    
+    return render_template('index.html')
+
+# Define a route to download the preprocessed data
+@app.route('/download')
+def download():
+    file_path = 'path_to_processed_data.csv'  # Update with the path to your processed data
+    return send_file(file_path, as_attachment=True)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
